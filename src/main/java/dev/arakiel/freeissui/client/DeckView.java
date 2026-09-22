@@ -75,19 +75,20 @@ final class DeckView {
         if (count != ringCacheFor) {
             cacheRings(count);
         }
-        float pitch = Mth.lerp(state.unfold(), DeckTuning.PITCH_TIGHT, DeckTuning.PITCH_LOOSE);
+        float unfold = state.unfold();
+        float pitch = Mth.lerp(unfold, DeckTuning.PITCH_TIGHT, DeckTuning.PITCH_LOOSE);
         float slide = state.slideOffset();
 
         for (int i = 0; i < ringCount; i++) {
-            place(state, count, rings[i], pitch, slide, centerY, screenHeight);
+            place(state, count, rings[i], pitch, slide, unfold, centerY, screenHeight);
         }
 
         float halo = 0.0F;
-        Card focused = place(state, count, 0, pitch, slide, centerY, screenHeight);
+        Card focused = place(state, count, 0, pitch, slide, unfold, centerY, screenHeight);
         if (focused != null) {
             float closeness = 1.0F - Mth.clamp(
                     Math.abs(focused.y - centerY) / DeckTuning.PITCH_LOOSE, 0.0F, 1.0F);
-            halo = state.unfold() * closeness;
+            halo = unfold * closeness;
         }
 
         frame.haloAlpha = halo;
@@ -158,10 +159,10 @@ final class DeckView {
     }
 
     private Card place(DeckState state, int count, int offset, float pitch, float slide,
-                       float centerY, int screenHeight) {
-        int index = Math.floorMod(state.focus() + offset, count);
+                       float unfold, float centerY, int screenHeight) {
+        int focus = state.focus();
+        int index = Math.floorMod(focus + offset, count);
         float y = centerY + (offset + slide) * pitch;
-        float unfold = state.unfold();
         float alpha = Math.abs(offset) <= DeckTuning.STACK_RADIUS ? 1.0F : unfold;
         if (unfold > 0.0F) {
             alpha *= edgeFade(y, screenHeight);
@@ -170,7 +171,7 @@ final class DeckView {
             return null;
         }
 
-        boolean focused = index == state.focus();
+        boolean focused = index == focus;
         Card card = borrow();
         card.index = index;
         card.x = DeckTuning.DECK_X;

@@ -31,15 +31,17 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 
-/** The spell sheet that is printed beside the deck while Alt is held down. */
+/**
+ * The spell sheet that is printed beside the deck while Alt is held down.
+ * One instance is kept by the overlay so the line buffer can be reused between frames.
+ */
 final class SpellInfoPanel {
 
-    private SpellInfoPanel() {
-    }
+    private final List<Component> lines = new ArrayList<>();
 
-    static void paint(GuiGraphics graphics, float deckX, float centerY,
-                      SpellSelectionManager.SelectionOption option, LocalPlayer player,
-                      int position, int total) {
+    void paint(GuiGraphics graphics, float deckX, float centerY,
+               SpellSelectionManager.SelectionOption option, LocalPlayer player,
+               int position, int total) {
         SpellData data = option.spellData;
         if (data == null || data == SpellData.EMPTY) {
             return;
@@ -50,7 +52,7 @@ final class SpellInfoPanel {
         int remaining = cooldown == null ? 0 : cooldown.getCooldownRemaining();
         int full = cooldown == null ? spell.getSpellCooldown() : cooldown.getSpellCooldown();
 
-        List<Component> lines = new ArrayList<>();
+        lines.clear();
         lines.add(spell.getDisplayName(player));
         lines.add(Component.literal((position + 1) + " / " + total));
         lines.add(Component.translatable("freeissui.hud.level", level, spell.getMaxLevel()));
@@ -76,7 +78,13 @@ final class SpellInfoPanel {
         pose.popPose();
     }
 
+    /**
+     * Tick count rendered as seconds with two decimals. The integer path is exact for ticks (one
+     * tick is five hundredths) and keeps the formatter out of the per frame work while Alt is held.
+     */
     private static String seconds(int ticks) {
-        return String.format(Locale.ROOT, "%.2f", Math.max(0, ticks) / 20.0F);
+        int hundredths = Math.max(0, ticks) * 5;
+        int fraction = hundredths % 100;
+        return (hundredths / 100) + (fraction < 10 ? ".0" : ".") + fraction;
     }
 }

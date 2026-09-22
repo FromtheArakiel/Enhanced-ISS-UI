@@ -16,7 +16,6 @@
 
 package dev.arakiel.freeissui.client;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import io.redspace.ironsspellbooks.api.magic.SpellSelectionManager;
 import io.redspace.ironsspellbooks.player.ClientMagicData;
 import java.util.List;
@@ -30,11 +29,12 @@ import net.minecraftforge.client.gui.overlay.ForgeGui;
 import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 
 /**
- * The overlay itself: it owns the deck state and the frame buffers, asks the state and the view
- * what this frame looks like, and hands the result to the painter.
+ * The overlay itself: it owns the deck state and the reusable frame buffers, asks the state and the
+ * view what this frame looks like, and hands the result to the painter.
  *
- * <p>Each frame takes the clock once, samples the deck once and then draws straight from the
- * buffers that {@link DeckView} reuses.
+ * <p>Each frame takes the clock once, samples the deck once, and then draws straight from the
+ * buffers that {@link DeckView} reuses. Nothing is allocated for a deck that is not changing, and
+ * cards are culled before they reach the painter, so no scissor is needed either.
  */
 public final class CastHudOverlay implements IGuiOverlay {
 
@@ -42,6 +42,8 @@ public final class CastHudOverlay implements IGuiOverlay {
 
     private final DeckState state = new DeckState();
     private final DeckView view = new DeckView();
+    private final CardPainter painter = new CardPainter();
+    private final SpellInfoPanel infoPanel = new SpellInfoPanel();
 
     private CastHudOverlay() {
     }
@@ -65,34 +67,27 @@ public final class CastHudOverlay implements IGuiOverlay {
             return;
         }
         List<SpellSelectionManager.SelectionOption> spells = selection.getAllSpells();
-        if (spells.isEmpty()) {
+        int count = spells.size();
+        if (count == 0) {
             state.forget();
             return;
         }
 
         long now = Util.getMillis();
-        int focused = Mth.clamp(selection.getGlobalSelectionIndex(), 0, spells.size() - 1);
-        DeckState.Change change = state.visit(focused, spells.size(), now);
+        int focused = Mth.clamp(selection.getGlobalSelectionIndex(), 0, count - 1);
+        DeckState.Change change = state.visit(focused, count, now);
         if (change != null) {
             DeckSounds.step(change.direction());
         }
         state.sample(now, ClientMagicData.isCasting());
 
         float centerY = height * 0.5F - DeckTuning.CARD_HALF;
-        DeckView.Frame frame = view.compose(state, spells.size(), centerY, height);
-
-        graphics.enableScissor(0, 0, width, height);
-        try {
-            CardPainter.paint(graphics, frame, spells, state);
-        } finally {
-            graphics.disableScissor();
-        }
+        DeckView.Frame frame = view.compose(state, count, centerY, height);
+        painter.paint(graphics, frame, spells, state);
         state.settle(now);
 
         if (Screen.hasAltDown()) {
-            SpellInfoPanel.paint(graphics, DeckTuning.DECK_X, centerY,
-                    spells.get(focused), player, focused, spells.size());
+            infoPanel.paint(graphics, DeckTuning.DECK_X, centerY, spells.get(focused), player, focused, count);
         }
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 }

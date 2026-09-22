@@ -35,67 +35,103 @@ import net.minecraft.util.Mth;
 /**
  * Paints a composed deck: cards, selection halo, cooldown, focus frame and the step arrow.
  *
- * <p>The card atlas of Iron's Spells is looked up once, and the frame handed in by
- * {@link DeckView} is read, never allocated, so painting a frame stays free of garbage.
+ * <p>One instance is kept by the overlay so the tint bookkeeping survives between frames. The GUI
+ * shader colour is only touched when the alpha actually changes, which means a folded deck - where
+ * every visible card is opaque - is submitted as a single batch instead of one flush per card.
+ * Fills and text are always drawn with the colour reset, so their own alpha stays exact.
  */
 final class CardPainter {
 
     private static final ResourceLocation ATLAS = SpellBarOverlay.TEXTURE;
+    private static final Component ARROW_UP = Component.literal("\u25B2");
+    private static final Component ARROW_DOWN = Component.literal("\u25BC");
 
-    private CardPainter() {
-    }
+    /** Colour currently applied to the GUI shader, 1.0 meaning "no tint". */
+    private float appliedTint = 1.0F;
 
-    static void paint(GuiGraphics graphics, DeckView.Frame frame,
-                      List<SpellSelectionManager.SelectionOption> spells, DeckState state) {
+    void paint(GuiGraphics graphics, DeckView.Frame frame,
+               List<SpellSelectionManager.SelectionOption> spells, DeckState state) {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+
+        // The scissor change in front of the deck already flushed the buffer, so this only costs a
+        // call and guarantees a known starting point for the tint tracking below.
+        graphics.flush();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        appliedTint = 1.0F;
+
+        List<DeckView.Card> cards = frame.cards;
+        float haloAlpha = frame.haloAlpha;
         for (int i = 0; i < frame.count; i++) {
-            DeckView.Card card = frame.cards.get(i);
+            DeckView.Card card = cards.get(i);
             SpellSelectionManager.SelectionOption option = spells.get(card.index);
+            boolean focused = card.focused;
 
-            if (card.focused && frame.haloAlpha > 0.001F) {
-                halo(graphics, card, frame.haloAlpha);
+            if (focused && haloAlpha > 0.001F) {
+                noTint(graphics);
+                halo(graphics, card, haloAlpha);
             }
-            card(graphics, option, card, card.focused ? 42.0F : 20.0F);
-            if (card.focused) {
-                cooldown(graphics, option, card);
-                focusFrame(graphics, card, state);
-                if (frame.arrow) {
-                    arrow(graphics, card, frame.arrowDirection, frame.arrowStrength);
-                }
+
+            card(graphics, option, card, focused ? 42.0F : 20.0F);
+
+            if (!focused) {
+                continue;
+            }
+            noTint(graphics);
+            cooldown(graphics, option, card);
+            focusFrame(graphics, card, state);
+            if (frame.arrow) {
+                noTint(graphics);
+                arrow(graphics, card, frame.arrowDirection, frame.arrowStrength);
             }
         }
+
+        noTint(graphics);
     }
 
-    private static void card(GuiGraphics graphics, SpellSelectionManager.SelectionOption option,
-                             DeckView.Card card, float z) {
+    /** Applies the wanted tint, flushing the previous batch only if it really differs. */
+    private void tint(GuiGraphics graphics, float wanted) {
+        float target = wanted >= 0.999F ? 1.0F : wanted;
+        if (target == appliedTint) {
+            return;
+        }
+        graphics.flush();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, target);
+        appliedTint = target;
+    }
+
+    private void noTint(GuiGraphics graphics) {
+        tint(graphics, 1.0F);
+    }
+
+    private void card(GuiGraphics graphics, SpellSelectionManager.SelectionOption option,
+                      DeckView.Card card, float z) {
         SpellData data = option.spellData;
         if (data == null || data == SpellData.EMPTY || card.alpha <= 0.001F) {
             return;
         }
+        tint(graphics, card.alpha);
+
         PoseStack pose = graphics.pose();
         pose.pushPose();
         pose.translate(card.x + DeckTuning.CARD_HALF, card.y + DeckTuning.CARD_HALF, z);
         pose.scale(card.zoom, card.zoom, 1.0F);
         pose.translate(-DeckTuning.CARD_HALF, -DeckTuning.CARD_HALF, 0.0F);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, card.alpha);
 
         graphics.blit(ATLAS, 0, 0, DeckTuning.CARD_U, DeckTuning.FRAME_V, DeckTuning.CARD, DeckTuning.CARD);
         if (!card.focused) {
-            int frameU = Curios.SPELLBOOK_SLOT.equals(option.slot)
+            String slot = option.slot;
+            int frameU = slot != null && (slot == Curios.SPELLBOOK_SLOT || Curios.SPELLBOOK_SLOT.equals(slot))
                     ? DeckTuning.FRAME_SPELLBOOK_U
                     : DeckTuning.FRAME_OTHER_U;
             graphics.blit(ATLAS, 0, 0, frameU, DeckTuning.FRAME_V, DeckTuning.CARD, DeckTuning.CARD);
         }
         graphics.blit(data.getSpell().getSpellIconResource(), 3, 3, 0.0F, 0.0F,
                 DeckTuning.CARD_ICON, DeckTuning.CARD_ICON, DeckTuning.CARD_ICON, DeckTuning.CARD_ICON);
-        graphics.flush();
-
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         pose.popPose();
     }
 
-    private static void halo(GuiGraphics graphics, DeckView.Card card, float emphasis) {
+    private void halo(GuiGraphics graphics, DeckView.Card card, float emphasis) {
         PoseStack pose = graphics.pose();
         pose.pushPose();
         pose.translate(card.x + DeckTuning.CARD_HALF, card.y + DeckTuning.CARD_HALF, 18.0F);
@@ -108,8 +144,8 @@ final class CardPainter {
         pose.popPose();
     }
 
-    private static void cooldown(GuiGraphics graphics, SpellSelectionManager.SelectionOption option,
-                                 DeckView.Card card) {
+    private void cooldown(GuiGraphics graphics, SpellSelectionManager.SelectionOption option,
+                          DeckView.Card card) {
         SpellData data = option.spellData;
         if (data == null || data == SpellData.EMPTY) {
             return;
@@ -130,7 +166,9 @@ final class CardPainter {
         pose.popPose();
     }
 
-    private static void focusFrame(GuiGraphics graphics, DeckView.Card card, DeckState state) {
+    private void focusFrame(GuiGraphics graphics, DeckView.Card card, DeckState state) {
+        tint(graphics, card.alpha);
+
         PoseStack pose = graphics.pose();
         pose.pushPose();
         pose.translate(card.x + DeckTuning.CARD_HALF, card.y + DeckTuning.CARD_HALF, 60.0F);
@@ -140,17 +178,13 @@ final class CardPainter {
             pose.mulPose(Axis.ZP.rotationDegrees(state.pulseSpin()));
         }
         pose.translate(-DeckTuning.CARD_HALF, -DeckTuning.CARD_HALF, 0.0F);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, card.alpha);
         graphics.blit(ATLAS, 0, 0, DeckTuning.FRAME_FOCUSED_U, DeckTuning.FRAME_V,
                 DeckTuning.CARD, DeckTuning.CARD);
-        graphics.flush();
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         pose.popPose();
     }
 
-    private static void arrow(GuiGraphics graphics, DeckView.Card card, int direction, float strength) {
-        Font font = Minecraft.getInstance().font;
-        Component glyph = Component.literal(direction < 0 ? "\u25B2" : "\u25BC");
+    private void arrow(GuiGraphics graphics, DeckView.Card card, int direction, float strength) {
+        Component glyph = direction < 0 ? ARROW_UP : ARROW_DOWN;
         float swing = Mth.sin(Mth.clamp(strength, 0.0F, 1.0F) * (float) Math.PI);
         int alpha = Mth.clamp(Math.round((0.42F + swing * 0.58F) * card.alpha * 255.0F), 0, 255);
 
@@ -159,6 +193,7 @@ final class CardPainter {
         pose.translate(card.x + DeckTuning.CARD + 2.0F, card.y + DeckTuning.CARD_HALF - 4.5F, 62.0F);
         float scale = 0.78F + swing * 0.14F;
         pose.scale(scale, scale, 1.0F);
+        Font font = Minecraft.getInstance().font;
         graphics.drawString(font, glyph, 0, 0, alpha << 24 | DeckTuning.ARROW, true);
         pose.popPose();
     }
