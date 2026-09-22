@@ -199,6 +199,11 @@ final class DeckView {
     private void cacheRings(int count) {
         ringCacheFor = count;
         ringCount = 0;
+        // A single spell has nothing to place around the focused card: with one entry the ring
+        // offset would wrap back onto the focused spell and draw it a second time underneath.
+        if (count <= 1) {
+            return;
+        }
         if (taken.length < count) {
             taken = new boolean[count];
         } else {
