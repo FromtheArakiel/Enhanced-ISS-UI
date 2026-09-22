@@ -1,0 +1,9 @@
+{
+  "freeissui.hud.level": "Level: %s / %s",
+  "freeissui.hud.rarity": "Rarity: %s",
+  "freeissui.hud.mana": "Mana: %s",
+  "freeissui.hud.cooldown": "Cooldown: %s / %s",
+  "freeissui.hud.cast_time": "Cast Time: %s",
+  "freeissui.hud.power": "Spell Power: %s",
+  "freeissui.hud.recast": "Recasts: %s"
+}

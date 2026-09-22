@@ -1,0 +1,9 @@
+{
+  "freeissui.hud.level": "等级：%s / %s",
+  "freeissui.hud.rarity": "稀有度：%s",
+  "freeissui.hud.mana": "魔力消耗：%s",
+  "freeissui.hud.cooldown": "冷却：%s / %s",
+  "freeissui.hud.cast_time": "施法时间：%s",
+  "freeissui.hud.power": "法术强度：%s",
+  "freeissui.hud.recast": "连续释放次数：%s"
+}
