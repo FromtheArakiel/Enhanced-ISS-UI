@@ -2,7 +2,7 @@
 
 This project is a free software.
 
-![LOGO](logo.png)![GPLv3](gplv3-logo.png) 
+![GPLv3](gplv3-logo.png) 
 
 A client side HUD rework for **Iron's Spells 'n Spellbooks** (Minecraft 1.20.1 / Forge).
 
