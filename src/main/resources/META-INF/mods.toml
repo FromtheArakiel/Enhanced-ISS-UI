@@ -1,6 +1,7 @@
 modLoader="javafml"
 loaderVersion="${loader_version_range}"
 license="${mod_license}"
+issueTrackerURL="https://github.com/FromtheArakiel/Enhanced-ISS-UI/issues"
 
 [[mods]]
 modId="${mod_id}"
@@ -8,6 +9,7 @@ version="${mod_version}"
 displayName="${mod_name}"
 authors="${mod_authors}"
 description='''${mod_description}'''
+logoFile="logo.png"
 
 [[dependencies.${mod_id}]]
     modId="forge"
