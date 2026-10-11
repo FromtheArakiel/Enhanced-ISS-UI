@@ -1,4 +1,6 @@
 {
+  "key.categories.freeissui": "Free ISS UI",
+  "key.freeissui.spell_details": "Show Spell Details (hold)",
   "freeissui.hud.level": "Level: %s / %s",
   "freeissui.hud.rarity": "Rarity: %s",
   "freeissui.hud.mana": "Mana: %s",

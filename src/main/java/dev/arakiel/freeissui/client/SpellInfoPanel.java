@@ -32,7 +32,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 
 /**
- * The spell sheet that is printed beside the deck while Alt is held down.
+ * The spell sheet that is printed beside the deck while the details key is held down.
  * One instance is kept by the overlay so the line buffer can be reused between frames.
  */
 final class SpellInfoPanel {
@@ -80,7 +80,8 @@ final class SpellInfoPanel {
 
     /**
      * Tick count rendered as seconds with two decimals. The integer path is exact for ticks (one
-     * tick is five hundredths) and keeps the formatter out of the per frame work while Alt is held.
+     * tick is five hundredths) and keeps the formatter out of the per frame work while the key is
+     * held.
      */
     private static String seconds(int ticks) {
         int hundredths = Math.max(0, ticks) * 5;

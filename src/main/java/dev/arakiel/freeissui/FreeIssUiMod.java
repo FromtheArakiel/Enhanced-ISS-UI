@@ -17,7 +17,9 @@
 package dev.arakiel.freeissui;
 
 import dev.arakiel.freeissui.client.CastHudOverlay;
+import dev.arakiel.freeissui.client.SpellDetailsKey;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -45,6 +47,11 @@ public final class FreeIssUiMod {
 
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static final class ClientWiring {
+
+        @SubscribeEvent
+        public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
+            event.register(SpellDetailsKey.SHOW_DETAILS);
+        }
 
         @SubscribeEvent
         public static void attachOverlay(RegisterGuiOverlaysEvent event) {

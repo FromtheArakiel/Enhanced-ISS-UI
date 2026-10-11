@@ -1,4 +1,6 @@
 {
+  "key.categories.freeissui": "Free ISS UI",
+  "key.freeissui.spell_details": "显示法术详情（按住）",
   "freeissui.hud.level": "等级：%s / %s",
   "freeissui.hud.rarity": "稀有度：%s",
   "freeissui.hud.mana": "魔力消耗：%s",

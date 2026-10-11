@@ -22,7 +22,6 @@ import java.util.List;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraftforge.client.gui.overlay.ForgeGui;
@@ -86,7 +85,7 @@ public final class CastHudOverlay implements IGuiOverlay {
         painter.paint(graphics, frame, spells, state);
         state.settle(now);
 
-        if (Screen.hasAltDown()) {
+        if (SpellDetailsKey.detailsHeld()) {
             infoPanel.paint(graphics, DeckTuning.DECK_X, centerY, spells.get(focused), player, focused, count);
         }
     }

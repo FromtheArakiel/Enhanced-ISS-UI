@@ -15,8 +15,10 @@ A client side HUD rework for **Iron's Spells 'n Spellbooks** (Minecraft 1.20.1 /
   picked from the spell wheel. Both are accompanied by a soft dial click.
 * The focused card shows the spell icon, a selection halo, its remaining cooldown and a gentle
   rotation while you are casting.
-* Hold **Alt** to print the complete spell sheet next to the deck: level, rarity, mana, cooldown,
-  cast time, spell power, recasts and whatever extra lines the spell itself provides.
+* Hold the **Show Spell Details** key to print the complete spell sheet next to the deck: level,
+  rarity, mana, cooldown, cast time, spell power, recasts and whatever extra lines the spell itself
+  provides. The key defaults to **Left Alt** and can be rebound in *Options -> Controls* under the
+  *Free ISS UI* category.
 * The **inscription table** pages through long spell books. Three rows stay visible, the mouse
   wheel moves through the rest, and a slim scrollbar shows where you are. The slot of the spell
   you selected is always kept on screen.
